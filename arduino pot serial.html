@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duelo de Potenciómetros a Ciegas</title>
+    <style>
+       body {
+            font-family: Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: #ece9e9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        
+        .board {
+            position: relative;
+            width: 800px;
+            height: 550px;
+            background-color: #2f3e43;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .objetivo-container {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .objetivo-text {
+            font-family: 'Tauri', sans-serif;
+            font-size: 24px;
+            color: #ece9e9;
+            margin-bottom: 10px;
+            text-shadow: 0 0 2px #33a28b;
+        }
+        
+        .valor-objetivo {
+            font-family: 'Tauri', sans-serif;
+            font-size: 36px;
+            color: #ece9e9;
+            padding: 10px 20px;
+            display: inline-block;
+            position: relative;
+        }
+        
+        .valor-objetivo::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border: 4px solid #33a28b;
+            border-radius: 5px;
+        }
+        
+        .pots-container {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 50px;
+        }
+        
+        .pot-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .pot {
+            width: 150px;
+            height: 150px;
+            background-color: #444;
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5), inset 0 -2px 5px rgba(255, 255, 255, 0.2), inset 0 2px 5px rgba(0, 0, 0, 0.8);
+            cursor: pointer;
+            transition: box-shadow 0.3s;
+        }
+        
+        .pot:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.7), inset 0 -2px 5px rgba(255, 255, 255, 0.2), inset 0 2px 5px rgba(0, 0, 0, 0.8);
+        }
+        
+        .knob {
+            position: absolute;
+            width: 8px;
+            height: 60px;
+            background-color: #ece9e9;
+            top: 15px;
+            left: 50%;
+            transform-origin: bottom center;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+        }
+        
+        .player-title {
+            font-family: 'Tauri', sans-serif;
+            font-size: 24px;
+            color: #ece9e9;
+            margin-bottom: 15px;
+            text-shadow: 0 0 2px #2f3e43;
+        }
+        
+        .player1 {
+            color: #3498db;
+        }
+        
+        .player2 {
+            color: #e74c3c;
+        }
+        
+        .valor {
+            font-family: 'Tauri', sans-serif;
+            font-size: 36px;
+            margin-top: 20px;
+            text-shadow: 0 0 2px #2f3e43;
+            background-color: rgba(0, 0, 0, 0.5);
+            width: 120px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            transition: opacity 0.3s;
+            opacity: 0;
+        }
+        
+        .valor.revealed {
+            opacity: 1;
+        }
+        
+        #valor1 {
+            color: #3498db;
+        }
+        
+        #valor2 {
+            color: #e74c3c;
+        }
+        
+        .check-button {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #33a28b;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s;
+        }
+        
+        .check-button:hover {
+            background-color: #2a8871;
+            transform: translateX(-50%) translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+        
+        .check-button:active {
+            transform: translateX(-50%) translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .result {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            text-align: center;
+            padding: 10px 20px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            opacity: 0;
+            transition: opacity 0.5s;
+            width: 80%;
+        }
+        
+        .visible {
+            opacity: 1;
+        }
+        
+        .game-round {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 18px;
+            color: #ece9e9;
+        }
+        
+        .score-board {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 18px;
+            color: #ece9e9;
+        }
+        
+        .reset-button {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background-color: #95a5a6;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            font-size: 14px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .reset-button:hover {
+            background-color: #7f8c8d;
+        }
+        
+        .mystery {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            font-weight: bold;
+            opacity: 0.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="board">
+ <div class="objetivo-container">
+            <div class="objetivo-text">VALOR OBJETIVO</div>
+            <div class="valor-objetivo" id="valorObjetivo">555</div>
+        </div>
+        
+        <div class="pots-container">
+            <div class="pot-container">
+                <div class="player-title player1">JUGADOR 1</div>
+                <div class="pot" id="pot1">
+                    <div class="knob" id="knob1"></div>
+                    <div class="mystery">?</div>
+                </div>
+                <div class="valor" id="valor1">0</div>
+            </div>
+            
+            <div class="pot-container">
+                <div class="player-title player2">JUGADOR 2</div>
+                <div class="pot" id="pot2">
+                    <div class="knob" id="knob2"></div>
+                    <div class="mystery">?</div>
+                </div>
+                <div class="valor" id="valor2">0</div>
+            </div>
+        </div>
+        
+        <button class="check-button" id="checkButton">¡Revelar y Comprobar!</button>
+        <button class="reset-button" id="resetButton">Nueva Ronda</button>
+
+
+
+        <button id="connect">Conectar a Arduino</button>
+        <button id="disconnect" disabled>Desconectar</button>
+
+        
+        <div class="result" id="result"></div>
+        
+        <div class="game-round" id="gameRound">Ronda: 1</div>
+        <div class="score-board" id="scoreBoard">Jugador 1: 0 | Jugador 2: 0</div>
+    </div>
+
+
+
+<script>
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Elementos DOM
+        const pot1 = document.getElementById('pot1');
+        const pot2 = document.getElementById('pot2');
+        const knob1 = document.getElementById('knob1');
+        const knob2 = document.getElementById('knob2');
+        const valor1 = document.getElementById('valor1');
+        const valor2 = document.getElementById('valor2');
+        const valorObjetivo = document.getElementById('valorObjetivo');
+        const checkButton = document.getElementById('checkButton');
+        const resetButton = document.getElementById('resetButton');
+        const result = document.getElementById('result');
+        const gameRound = document.getElementById('gameRound');
+        const scoreBoard = document.getElementById('scoreBoard');
+        const connectButton = document.getElementById('connect');
+        const disconnectButton = document.getElementById('disconnect');
+
+
+        // Variables del juego
+        let pot1Value = 0;
+        let pot2Value = 0;
+        let isDragging1 = false;
+        let isDragging2 = false;
+        let prevAngle1 = 0;
+        let prevAngle2 = 0;
+        let targetValue = 0;
+        let roundNumber = 1;
+        let player1Score = 0;
+        let player2Score = 0;
+
+        // Conexión con el puerto serial
+        let port;
+        let writer;
+
+        // Datos seriales
+        let serialData = {
+            pot1Value: 0,
+            pot2Value: 0,
+            buttonValue: 0,
+        };
+
+// Wake Lock para mantener la pantalla activa
+let wakeLock = null;
+
+// Solicitar Wake Lock
+async function requestWakeLock() {
+    try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        console.log('Wake Lock activado');
+
+        wakeLock.addEventListener('release', () => {
+            console.log('Wake Lock liberado');
+        });
+    } catch (err) {
+        console.error(`${err.name}, ${err.message}`);
+    }
+}
+
+// Reintentar Wake Lock si el usuario regresa a la pestaña
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && wakeLock === null) {
+        requestWakeLock();
+    }
+});
+
+
+function speak(text) {
+    // Crear un objeto SpeechSynthesisUtterance con el texto a decir
+    let utterance = new SpeechSynthesisUtterance(text);
+    
+    // Opcional: Puedes modificar propiedades, como el idioma, la velocidad y el tono
+    utterance.lang = 'es-ES'; // Establecer el idioma en español (puedes elegir otros idiomas)
+    utterance.rate = 1; // Velocidad de la voz (1 es normal)
+    utterance.pitch = 1; // Tono de la voz (1 es normal)
+
+    // Reproducir el texto
+    window.speechSynthesis.speak(utterance);
+}
+
+            
+
+// Actualizar la rotación y el valor del potenciómetro 1
+function updatePot1(angle) {
+    // Aplicar la rotación al knob 1
+    knob1.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+
+    // Mapear ángulo (0-300) a valor (0-1024)
+    serialData.pot1Value = Math.floor((angle / 300) * 1024);
+
+    // Actualizar el valor en la interfaz
+    valor1.textContent = serialData.pot1Value;
+
+    // Enviar el valor del potenciómetro al dispositivo serial
+    //sendDataToSerial();
+}
+
+// Actualizar la rotación y el valor del potenciómetro 2
+function updatePot2(angle) {
+    // Aplicar la rotación al knob 2
+    knob2.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+
+    // Mapear ángulo (0-300) a valor (0-1024)
+    serialData.pot2Value = Math.floor((angle / 300) * 1024);
+
+    // Actualizar el valor en la interfaz
+    valor2.textContent = serialData.pot2Value;
+
+    // Enviar el valor del potenciómetro al dispositivo serial
+    //sendDataToSerial();
+}
+
+// Función para sincronizar la rotación con los valores del serial
+function syncKnobsWithSerialData() {
+    // Calcular el ángulo en función del valor del potenciómetro y actualizar la rotación
+    const angle1 = (serialData.pot1Value / 1024) * 300; // Convertir el valor del potenciómetro a ángulo
+    const angle2 = (serialData.pot2Value / 1024) * 300; // Convertir el valor del potenciómetro a ángulo
+
+    // Actualizar la rotación de los knobs
+    knob1.style.transform = `translateX(-50%) rotate(${angle1}deg)`;
+    knob2.style.transform = `translateX(-50%) rotate(${angle2}deg)`;
+}
+
+
+
+// Conectar al puerto serial
+async function connectSerial() {
+    try {
+        port = await navigator.serial.requestPort();  // Solicitar puerto serial
+        await port.open({ baudRate: 9600 });
+
+        // Inicializar writer solo después de abrir el puerto
+        writer = port.writable.getWriter();
+
+        // Cambiar estado de los botones
+        connectButton.disabled = true;
+        disconnectButton.disabled = false;
+
+        // Llamar a la función para leer datos
+        readSerialData();
+
+        // Enviar el valor objetivo al dispositivo después de la conexión exitosa
+        sendTargetValueToSerial();
+
+    } catch (error) {
+        console.error("Error al conectar al puerto serial:", error);
+    }
+}
+
+// Función para enviar el valor objetivo por serial
+async function sendTargetValueToSerial() {
+    // Verificar si el puerto está abierto y si writer está definido
+    if (!writer) {
+        console.error("El escritor no está definido o el puerto serial no está abierto.");
+        return;  // Salir si writer no está disponible
+    }
+
+    // Convertir el valor objetivo a una cadena
+    const targetValueString = targetValue.toString();
+    const encoder = new TextEncoder();
+    const data = encoder.encode(targetValueString);
+
+    try {
+        // Enviar los datos por serial
+        await writer.write(data);
+        console.log("Valor objetivo enviado al dispositivo:", targetValue);
+
+    } catch (error) {
+        console.error("Error al enviar valor objetivo por serial:", error);
+    }
+}
+
+// Función para cerrar la conexión serial
+async function closeSerial() {
+    try {
+        if (port && port.readable) {
+            await port.close();
+            connectButton.disabled = false;
+            disconnectButton.disabled = true;
+        }
+    } catch (error) {
+        console.error("Error al desconectar el puerto serial:", error);
+    }
+}
+
+
+
+// Función para leer los datos seriales
+async function readSerialData() {
+    const reader = port.readable.getReader();
+    const decoder = new TextDecoder();
+    let accumulatedData = "";  // Acumulador para los datos recibidos
+
+    try {
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) {
+                reader.releaseLock();
+                break;
+            }
+
+            // Decodificamos los datos recibidos y los acumulamos
+            const data = decoder.decode(value, { stream: true });
+            accumulatedData += data;
+
+            // Si la cadena acumulada contiene un salto de línea, procesamos los datos
+            let lines = accumulatedData.split("\n");
+
+            // La última línea podría estar incompleta, así que la dejamos para la siguiente iteración
+            accumulatedData = lines.pop();
+
+            // Procesamos cada línea completa
+            for (let line of lines) {
+                const trimmedLine = line.trim();
+
+                // Comprobamos si la línea tiene el formato esperado (3 valores separados por coma)
+                if (trimmedLine.indexOf(',') === -1 || trimmedLine.split(',').length !== 3) {
+                    console.warn("Datos recibidos con formato incorrecto:", trimmedLine);
+                    continue;
+                }
+
+                const [pot1, pot2, button] = trimmedLine.split(',');
+
+                // Validamos que todos los valores sean números válidos
+                const pot1Value = parseInt(pot1);
+                const pot2Value = parseInt(pot2);
+                const buttonValue = parseInt(button);
+
+                // Comprobamos si los valores son números válidos
+                if (isNaN(pot1Value) || isNaN(pot2Value) || isNaN(buttonValue)) {
+                    console.warn("Datos inválidos recibidos:", trimmedLine);
+                    continue;  // Si alguno de los valores es inválido, saltamos a la siguiente iteración
+                }
+
+                // Actualizamos los valores en el objeto serialData
+                serialData.pot1Value = pot1Value;
+                serialData.pot2Value = pot2Value;
+                serialData.buttonValue = buttonValue;
+
+                // Actualizamos la interfaz de usuario
+                valor1.textContent = serialData.pot1Value;
+                valor2.textContent = serialData.pot2Value;
+
+                // Sincronizamos los potenciómetros con los datos seriales
+                syncKnobsWithSerialData();
+
+                // Si el valor del botón es 1, simulamos un clic
+                if (serialData.buttonValue === 1) {
+                    checkButton.click();  // Simula el clic en el botón de comprobación
+                }
+                if (serialData.buttonValue === 2) {
+                    resetButton.click();  // Simula el clic en el botón de reinicio
+                }
+
+
+
+
+            }
+        }
+    } catch (error) {
+        console.error("Error al leer los datos seriales:", error);
+    }
+}
+
+
+
+
+    // Iniciar el juego
+        initGame();
+
+        function initGame() {
+            requestWakeLock();
+            new Audio('click.mp3').play();
+            // Generar valor objetivo aleatorio entre 0 y 1024
+            targetValue = Math.floor(Math.random() * 1025);
+            valorObjetivo.textContent = targetValue;
+            sendTargetValueToSerial(writer);
+
+            speak(`El valor objetivo es ${targetValue}`)
+
+
+            // Resetear los potenciómetros
+            resetPots();
+            document.body.style.backgroundColor = '#1a1a1a';
+
+
+            // Actualizar número de ronda
+            gameRound.textContent = `Ronda: ${roundNumber}`;
+
+            // Ocultar resultado anterior
+            result.className = 'result';
+
+            // Ocultar valores
+            valor1.classList.remove('revealed');
+            valor2.classList.remove('revealed');
+        }
+
+        function resetPots() {
+            // Resetear valores y posición de los potenciómetros
+            serialData.pot1Value = 0;
+            serialData.pot2Value = 0;
+            knob1.style.transform = 'translateX(-50%) rotate(0deg)';
+            knob2.style.transform = 'translateX(-50%) rotate(0deg)';
+            valor1.textContent = '0';
+            valor2.textContent = '0';
+        }
+
+        // Función para calcular el ángulo del ratón relativo al centro del potenciómetro
+        function calculateAngle(element, event) {
+            const rect = element.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const x = event.clientX - centerX;
+            const y = event.clientY - centerY;
+            let angle = Math.atan2(y, x) * (180 / Math.PI);
+
+            // Ajustar el ángulo para que 0 esté en la parte superior
+            angle = angle + 90;
+            if (angle < 0) angle += 360;
+
+            // Limitar el ángulo entre 0 y 300 (para simular un potenciómetro real)
+            if (angle > 300 && angle < 360) angle = 300;
+            if (angle >= 0 && angle < 60) angle = 0;
+
+            return angle;
+        }
+
+
+
+        // Eventos para el potenciómetro 1
+        pot1.addEventListener('mousedown', function(e) {
+            isDragging1 = true;
+            prevAngle1 = calculateAngle(pot1, e);
+            updatePot1(prevAngle1);
+        });
+
+        // Eventos para el potenciómetro 2
+        pot2.addEventListener('mousedown', function(e) {
+            isDragging2 = true;
+            prevAngle2 = calculateAngle(pot2, e);
+            updatePot2(prevAngle2);
+        });
+
+        // Eventos de movimiento y liberación del ratón
+        document.addEventListener('mousemove', function(e) {
+            if (isDragging1) {
+                const currentAngle = calculateAngle(pot1, e);
+                updatePot1(currentAngle);
+                prevAngle1 = currentAngle;
+            }
+
+            if (isDragging2) {
+                const currentAngle = calculateAngle(pot2, e);
+                updatePot2(currentAngle);
+                prevAngle2 = currentAngle;
+            }
+        });
+
+        document.addEventListener('mouseup', function() {
+            isDragging1 = false;
+            isDragging2 = false;
+        });
+
+
+
+
+// Evento para el botón de comprobar
+checkButton.addEventListener('click', async function() {
+    let serialDataReceived = false;
+    const abortController = new AbortController(); // Creamos un controlador de aborto
+    const timeout = setTimeout(() => {
+        abortController.abort(); // Abortamos la lectura de datos después de 2 segundos
+    }, 2000);
+
+    // Intentamos esperar por los datos seriales con un tiempo límite de 2 segundos
+    try {
+        // Usamos Promise.race para hacer que, si el botón es presionado nuevamente, abortamos la espera.
+        await Promise.race([
+            waitForSerialDataWithAbort(abortController.signal), // Esperar los datos seriales con abort
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Tiempo de espera agotado para los datos seriales')), 2000)) // Timeout de 2 segundos
+        ]);
+        serialDataReceived = true; // Si los datos se reciben, marcamos que se recibieron
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            console.log('Lectura cancelada');
+        } else {
+            console.warn(error.message); // Si se agotó el tiempo, mostramos el mensaje de advertencia
+        }
+    } finally {
+        // Cancelamos el timeout si ya se resolvió antes
+        clearTimeout(timeout);
+    }
+
+    // Revelar los valores (aunque no estén completos)
+    valor1.classList.add('revealed');
+    valor2.classList.add('revealed');
+
+    // Si no se recibieron datos, usamos los valores actuales, aunque sean 0 o incompletos
+    const pot1Value = serialDataReceived ? serialData.pot1Value : 0;
+    const pot2Value = serialDataReceived ? serialData.pot2Value : 0;
+
+    // Calcular la diferencia entre los valores de los potenciómetros y el objetivo
+    const diff1 = Math.abs(pot1Value - targetValue);
+    const diff2 = Math.abs(pot2Value - targetValue);
+
+    let resultText = '';
+
+// Al mostrar el resultado, cambia el fondo según el ganador
+if (diff1 < diff2) {
+    // Jugador 1 gana
+    player1Score++;
+    resultText = `¡Jugador 1 gana con ${pot1Value}! (Jugador 2: ${pot2Value}) Más cercano al objetivo por ${diff2 - diff1} unidades`;
+
+    // Cambiar el fondo de la página a color azul (Jugador 1)
+    document.body.style.backgroundColor = '#3498db'; // Color de fondo del jugador 1
+    // Reproducir sonido de victoria del jugador 1
+    new Audio('game_win_L.mp3').play();
+    speak(`jugador uno a ganado`);
+
+} else if (diff2 < diff1) {
+    // Jugador 2 gana
+    player2Score++;
+    resultText = `¡Jugador 2 gana con ${pot2Value}! (Jugador 1: ${pot1Value}) Más cercano al objetivo por ${diff1 - diff2} unidades`;
+
+    // Cambiar el fondo de la página a color rojo (Jugador 2)
+    document.body.style.backgroundColor = '#e74c3c'; // Color de fondo del jugador 2
+    // Reproducir sonido de victoria del jugador 2
+    new Audio('game_win_R.mp3').play();
+    speak(`jugador dos a ganado`);
+} else {
+    // Empate
+    resultText = `¡Empate! Ambos jugadores eligieron ${pot1Value}, a ${diff1} unidades del objetivo`;
+
+    // Cambiar el fondo de la página a gris (empate)
+    document.body.style.backgroundColor = '#95a5a6'; // Color para empate
+}
+
+
+    // Mostrar resultado
+    result.textContent = resultText;
+    result.className = 'result visible';
+
+    // Actualizar marcador
+    scoreBoard.textContent = `Jugador 1: ${player1Score} | Jugador 2: ${player2Score}`;
+
+    // Deshabilitar el botón de comprobación
+    checkButton.disabled = true;
+});
+
+
+
+
+// Función para esperar los datos seriales con posibilidad de abortar
+function waitForSerialDataWithAbort(signal) {
+    return new Promise((resolve, reject) => {
+        const interval = setInterval(() => {
+            if (signal.aborted) {
+                clearInterval(interval); // Cancelar la espera si se aborta
+                reject(new Error('Lectura cancelada por segundo clic'));
+            }
+
+            // Verificamos si los datos seriales han sido actualizados
+            if (serialData.pot1Value !== 0 && serialData.pot2Value !== 0) {
+                clearInterval(interval);
+                resolve();
+            }
+        }, 100); // Comprobar cada 100 ms
+    });
+}
+
+
+            // Función para el reinicio del juego
+            resetButton.addEventListener('click', function() {
+                roundNumber++;
+                initGame();
+                checkButton.disabled = false;
+            });
+
+            // Conectar con el puerto serial cuando se cargue la página
+            connectButton.addEventListener('click', function() {
+                connectSerial();
+            });
+            
+            disconnectButton.addEventListener('click', function() {
+                closeSerial();
+            });    
+
+
+
+        });
+
+
+
+</script>
+
+
+
+</body>
+</html>
