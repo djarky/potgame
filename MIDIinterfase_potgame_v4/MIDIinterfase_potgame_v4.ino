@@ -111,10 +111,10 @@ void loop() {
 
   digitalPot1=map(pot1Raw,0,1023, 0, 127);
   digitalPot2=map(pot2Raw,0,1023, 0, 127);
-
+/*
   digitalPot1=map(digitalPot1,0,68,0,127);
   digitalPot2=map(digitalPot2,0,68,0,127);
-
+*/
   if(digitalPot1!=digitalPot1Ant){
   midi.sendControlChange(1,digitalPot1,1);
   midi.delay(1);
