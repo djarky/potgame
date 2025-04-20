@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duelo de Potenciómetros a Ciegas</title>
+     <link rel="stylesheet" href="styles.css">
+
+</head>
+<body>
+    <div class="board">
+ <div class="objetivo-container">
+            <div class="objetivo-text">VALOR OBJETIVO</div>
+            <div class="valor-objetivo" id="valorObjetivo">555</div>
+        </div>
+        
+        <div class="pots-container">
+            <div class="pot-container">
+                <div class="player-title player1">JUGADOR 1</div>
+                <div class="pot" id="pot1">
+                    <div class="knob" id="knob1"></div>
+                    <div class="mystery">?</div>
+                </div>
+                <div class="valor" id="valor1">0</div>
+            </div>
+            
+            <div class="pot-container">
+                <div class="player-title player2">JUGADOR 2</div>
+                <div class="pot" id="pot2">
+                    <div class="knob" id="knob2"></div>
+                    <div class="mystery">?</div>
+                </div>
+                <div class="valor" id="valor2">0</div>
+            </div>
+        </div>
+        
+        <button class="check-button" id="checkButton">¡Revelar y Comprobar!</button>
+        <button class="reset-button" id="resetButton">Nueva Ronda</button>
+
+
+
+        <button id="connect">Conectar a Arduino</button>
+        <button id="disconnect" disabled>Desconectar</button>
+
+        
+        <div class="result" id="result"></div>
+        
+        <div class="game-round" id="gameRound">Ronda: 1</div>
+        <div class="score-board" id="scoreBoard">Jugador 1: 0 | Jugador 2: 0</div>
+    </div>
+
+    <script src="script.js"></script>
+
+
+</body>
+</html>
