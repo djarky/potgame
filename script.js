@@ -195,18 +195,17 @@ document.addEventListener('visibilitychange', () => {
 });
 
 
-function speak(text) {
-    // Crear un objeto SpeechSynthesisUtterance con el texto a decir
-    let utterance = new SpeechSynthesisUtterance(text);
-    
-    // Opcional: Puedes modificar propiedades, como el idioma, la velocidad y el tono
-    utterance.lang = 'es-ES'; // Establecer el idioma en español (puedes elegir otros idiomas)
-    utterance.rate = 1; // Velocidad de la voz (1 es normal)
-    utterance.pitch = 1; // Tono de la voz (1 es normal)
+async function speak(text) {
+    window.speechSynthesis.cancel(); // 🔄 Cancela lo que esté en cola o reproduciéndose
 
-    // Reproducir el texto
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'es-ES';
+    utterance.rate = 1;
+    utterance.pitch = 1;
+
     window.speechSynthesis.speak(utterance);
 }
+
 
             
 
@@ -300,23 +299,34 @@ async function sendTargetValueToSerial() {
     }
 }
 
-// Función para cerrar la conexión serial
+let reader; // Definilo arriba del todo para tenerlo global
+
 async function closeSerial() {
     try {
+        if (reader) {
+            await reader.cancel(); // ⚠️ Cancelar la lectura activa
+            await reader.releaseLock(); // 🔓 Liberar el lock
+            reader = null;
+        }
+
         if (port && port.readable) {
-            await port.close();
+            await port.close(); // ✅ Ahora sí se puede cerrar
             connectButton.disabled = false;
             disconnectButton.disabled = true;
+            console.log("Puerto serial cerrado correctamente.");
         }
     } catch (error) {
         console.error("Error al desconectar el puerto serial:", error);
     }
+            connectButton.disabled = false;
+            disconnectButton.disabled = true;
+
 }
 
 
 
 async function readSerialData() {
-    const reader = port.readable.getReader();
+    reader = port.readable.getReader();
     const decoder = new TextDecoder();
     let accumulatedData = "";  // Acumulador para los datos recibidos
 
@@ -563,90 +573,109 @@ async function startMusic() {
 
 
 
+// Cache audio elements at the beginning
+const player1WinSound = new Audio('game_win_L.mp3');
+const player2WinSound = new Audio('game_win_R.mp3');
+let audioInitialized = false;
+
 // Evento para el botón de comprobar
 checkButton.addEventListener('click', async function() {
-    let serialDataReceived = false;
-    const abortController = new AbortController(); // Creamos un controlador de aborto
-    const timeout = setTimeout(() => {
-        abortController.abort(); // Abortamos la lectura de datos después de 2 segundos
-    }, 2000);
-
-    // Intentamos esperar por los datos seriales con un tiempo límite de 2 segundos
-    try {
-        // Usamos Promise.race para hacer que, si el botón es presionado nuevamente, abortamos la espera.
-        await Promise.race([
-            waitForSerialDataWithAbort(abortController.signal), // Esperar los datos seriales con abort
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Tiempo de espera agotado para los datos seriales')), 2000)) // Timeout de 2 segundos
-        ]);
-        serialDataReceived = true; // Si los datos se reciben, marcamos que se recibieron
-    } catch (error) {
-        if (error.name === 'AbortError') {
-            console.log('Lectura cancelada');
-        } else {
-            console.warn(error.message); // Si se agotó el tiempo, mostramos el mensaje de advertencia
+    // Initialize audio on first interaction
+    if (!audioInitialized) {
+        // Start context for all audio
+        if (context && context.state === 'suspended') {
+            await context.resume();
         }
-    } finally {
-        // Cancelamos el timeout si ya se resolvió antes
-        clearTimeout(timeout);
+        // Pre-load sound effects
+        try {
+            await player1WinSound.load();
+            await player2WinSound.load();
+            audioInitialized = true;
+        } catch (err) {
+            console.warn("Failed to preload audio:", err);
+        }
     }
-
-    // Revelar los valores (aunque no estén completos)
+    
+    let serialDataReceived = false;
+    
+    // Only wait for serial data if we're actually connected
+    if (port && port.readable) {
+        const abortController = new AbortController();
+        
+        try {
+            // Single timeout promise with abort control
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => {
+                    abortController.abort();
+                    reject(new Error('Tiempo de espera agotado para los datos seriales'));
+                }, 2000);
+            });
+            
+            await Promise.race([
+                waitForSerialDataWithAbort(abortController.signal),
+                timeoutPromise
+            ]);
+            
+            serialDataReceived = true;
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('Lectura cancelada');
+            } else {
+                console.warn(error.message);
+            }
+        }
+    }
+    
+    // Revelar los valores
     valor1.classList.add('revealed');
     valor2.classList.add('revealed');
-
-    // Si no se recibieron datos, usamos los valores actuales, aunque sean 0 o incompletos
-    const pot1Value = serialDataReceived ? serialData.pot1Value : 0;
-    const pot2Value = serialDataReceived ? serialData.pot2Value : 0;
-
-    // Calcular la diferencia entre los valores de los potenciómetros y el objetivo
+    
+    // Use current values regardless of serial connection
+    const pot1Value = serialData.pot1Value || 0;
+    const pot2Value = serialData.pot2Value || 0;
+    
+    // Game logic
     const diff1 = Math.abs(pot1Value - targetValue);
     const diff2 = Math.abs(pot2Value - targetValue);
-
     let resultText = '';
-
-    // Al mostrar el resultado, cambia el fondo según el ganador
+    
     if (diff1 < diff2) {
-         // Jugador 1 gana
+        // Jugador 1 gana
         player1Score++;
         resultText = `¡Jugador 1 gana con ${pot1Value}! (Jugador 2: ${pot2Value}) Más cercano al objetivo por ${diff2 - diff1} unidades`;
-
-         // Cambiar el fondo de la página a color azul (Jugador 1)
-         document.body.style.backgroundColor = '#3498db'; // Color de fondo del jugador 1
-         // Reproducir sonido de victoria del jugador 1
-         new Audio('game_win_L.mp3').play();
-         speak(`jugador uno a ganado`);
-
+        document.body.style.backgroundColor = '#3498db';
+        
+        // Play audio if initialized
+        if (audioInitialized) {
+            player1WinSound.play().catch(err => console.warn("Error playing sound:", err));
+            speak(`jugador uno ha ganado`);
+        }
     } else if (diff2 < diff1) {
         // Jugador 2 gana
         player2Score++;
         resultText = `¡Jugador 2 gana con ${pot2Value}! (Jugador 1: ${pot1Value}) Más cercano al objetivo por ${diff1 - diff2} unidades`;
-
-        // Cambiar el fondo de la página a color rojo (Jugador 2)
-        document.body.style.backgroundColor = '#e74c3c'; // Color de fondo del jugador 2
-        // Reproducir sonido de victoria del jugador 2
-        new Audio('game_win_R.mp3').play();
-        speak(`jugador dos a ganado`);
+        document.body.style.backgroundColor = '#e74c3c';
+        
+        if (audioInitialized) {
+            player2WinSound.play().catch(err => console.warn("Error playing sound:", err));
+            speak(`jugador dos ha ganado`);
+        }
     } else {
-         // Empate
-         resultText = `¡Empate! Ambos jugadores eligieron ${pot1Value}, a ${diff1} unidades del objetivo`;
-
-         // Cambiar el fondo de la página a gris (empate)
-         document.body.style.backgroundColor = '#95a5a6'; // Color para empate
+        // Empate
+        resultText = `¡Empate! Ambos jugadores eligieron ${pot1Value}, a ${diff1} unidades del objetivo`;
+        document.body.style.backgroundColor = '#95a5a6';
+        
+        if (audioInitialized) {
+            speak(`empate`);
+        }
     }
-
-
-    // Mostrar resultado
+    
+    // UI updates
     result.textContent = resultText;
     result.className = 'result visible';
-
-    // Actualizar marcador
     scoreBoard.textContent = `Jugador 1: ${player1Score} | Jugador 2: ${player2Score}`;
-
-    // Deshabilitar el botón de comprobación
     checkButton.disabled = true;
 });
-
-
 
 
 // Función para esperar los datos seriales con posibilidad de abortar
