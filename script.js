@@ -534,44 +534,61 @@ async function startMusic() {
             return angle;
         }
 
+// Eventos para el potenciómetro 1
+function startDragPot1(e) {
+    isDragging1 = true;
+    const evt = e.type.startsWith('touch') ? e.touches[0] : e;
+    prevAngle1 = calculateAngle(pot1, evt);
+    updatePot1(prevAngle1);
+    e.preventDefault();
+}
 
+function startDragPot2(e) {
+    isDragging2 = true;
+    const evt = e.type.startsWith('touch') ? e.touches[0] : e;
+    prevAngle2 = calculateAngle(pot2, evt);
+    updatePot2(prevAngle2);
+    e.preventDefault();
+}
 
-        // Eventos para el potenciómetro 1
-        pot1.addEventListener('mousedown', function(e) {
-            isDragging1 = true;
-            prevAngle1 = calculateAngle(pot1, e);
-            updatePot1(prevAngle1);
-        });
+pot1.addEventListener('mousedown', startDragPot1);
+pot1.addEventListener('touchstart', startDragPot1);
 
-        // Eventos para el potenciómetro 2
-        pot2.addEventListener('mousedown', function(e) {
-            isDragging2 = true;
-            prevAngle2 = calculateAngle(pot2, e);
-            updatePot2(prevAngle2);
-        });
+pot2.addEventListener('mousedown', startDragPot2);
+pot2.addEventListener('touchstart', startDragPot2);
 
-        // Eventos de movimiento y liberación del ratón
-        document.addEventListener('mousemove', function(e) {
-            if (isDragging1) {
-                const currentAngle = calculateAngle(pot1, e);
-                updatePot1(currentAngle);
-                prevAngle1 = currentAngle;
-            }
+// Movimiento
+function onDragMove(e) {
+    const evt = e.type.startsWith('touch') ? e.touches[0] : e;
 
-            if (isDragging2) {
-                const currentAngle = calculateAngle(pot2, e);
-                updatePot2(currentAngle);
-                prevAngle2 = currentAngle;
-            }
-        });
+    if (isDragging1) {
+        const currentAngle = calculateAngle(pot1, evt);
+        updatePot1(currentAngle);
+        prevAngle1 = currentAngle;
+        e.preventDefault();
+    }
 
-        document.addEventListener('mouseup', function() {
-            isDragging1 = false;
-            isDragging2 = false;
-        });
+    if (isDragging2) {
+        const currentAngle = calculateAngle(pot2, evt);
+        updatePot2(currentAngle);
+        prevAngle2 = currentAngle;
+        e.preventDefault();
+    }
+}
 
+document.addEventListener('mousemove', onDragMove);
+document.addEventListener('touchmove', onDragMove);
 
+// Finalizar drag
+function endDrag() {
+    isDragging1 = false;
+    isDragging2 = false;
+}
 
+document.addEventListener('mouseup', endDrag);
+document.addEventListener('touchend', endDrag);
+
+  
 
 // Cache audio elements at the beginning
 const player1WinSound = new Audio('game_win_L.mp3');
@@ -716,3 +733,12 @@ disconnectButton.addEventListener('click', function() {
 
 
 }); //end
+
+
+/*
+
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+
+*/

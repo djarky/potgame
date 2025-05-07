@@ -851,3 +851,11 @@ body {
 }
 
     
+.knob:focus {
+  outline: none;
+}
+
+ {
+  touch-action: manipulation; /* Desactiva doble toque para zoom */
+  -webkit-tap-highlight-color: transparent; /* En móviles, evita el highlight azul */
+}
